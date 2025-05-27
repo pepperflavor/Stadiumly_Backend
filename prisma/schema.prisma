@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id    Int       @id @default(autoincrement())
+  user_pwd   String? @default("")
+  user_nick  String
+  user_kakao Int  @default(0) // 카카오로 가입하면:1, 아니면 :0
+  user_grade Int       @default(1)
+  favorits   Favorit[]
+  messages Message[]
+
+  ChatRoom ChatRoom[]
+}
+
+model Favorit {
+  fav_id  Int     @id @default(autoincrement())
+  user_id Int
+  sta_id  Int
+
+
+  stadium Stadium @relation(fields: [sta_id], references: [sta_id])
+  user    User    @relation(fields: [user_id], references: [user_id])
+
+  @@index([sta_id], map: "Favorit_sta_id_fkey")
+  @@index([user_id], map: "Favorit_user_id_fkey")
+}
+
+model Stadium {
+  sta_id         Int    @id @default(autoincrement())
+  sta_name       String @unique
+  sta_team       String @unique
+  sta_lati       Float
+  sta_long       Float
+
+
+  Favorit        Favorit[]
+  Recommendation Recommendation[] @relation("StadiumRecommendations")
+  Cafeteria Cafeteria[]
+  ParkingLot ParkingLot[]
+}
+
+// 추천맛집
+model Recommendation {
+  reco_id   Int       @id @default(autoincrement())
+  reco_name String
+  reco_image String
+
+
+  stadiumId Int
+  stadium   Stadium @relation(fields: [stadiumId], references: [sta_id], name: "StadiumRecommendations")
+}
+
+// 구내 식당
+model Cafeteria {
+  cafe_id   Int       @id @default(autoincrement())
+  cafe_name String
+  cafe_image String
+  stadiumId Int
+  stadium   Stadium @relation(fields: [stadiumId], references: [sta_id])
+}
+
+// 주차장 정보도 저장해서 해야함
+model ParkingLot {
+  park_id   Int       @id @default(autoincrement())
+  park_name String
+  park_lati Float
+  park_long Float
+  stadiumId Int
+  stadium   Stadium @relation(fields: [stadiumId], references: [sta_id])
+}
+
+// 선발투수 정보
+model StartPitcher{
+  id Int @id @default(autoincrement())
+  pit_name String // 홈 구장 선발투수이름
+  pit_team String // 홈 구장 팀이름
+  pit_home_name String // 홈 구장이름
+  pit_vs_name String // 상대선수
+  pit_vs_team String // 상대선수 팀이름
+  date String
+}
+
+model ChatRoom {
+  id       Int       @id @default(autoincrement())
+  name     String
+  messages Message[]
+  users    User[]
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+  chatRoomId Int
+  userId     Int
+  user       User     @relation(fields: [userId], references: [user_id])
+}
+
