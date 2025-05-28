@@ -7,6 +7,7 @@ import { StadiumModule } from './stadium/stadium.module';
 import { UserModule } from './user/user.module';
 import { CafeteriaModule } from './cafeteria/cafeteria.module';
 import { CrawlingModule } from './crawling/crawling.module';
+import { FileBlobModule } from './file-blob/file-blob.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CrawlingModule } from './crawling/crawling.module';
     UserModule,
     CafeteriaModule,
     CrawlingModule,
+    FileBlobModule,
   ],
   controllers: [AppController],
   providers: [AppService],

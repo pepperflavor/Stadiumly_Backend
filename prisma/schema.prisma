@@ -34,12 +34,11 @@ model Favorit {
 
 model Stadium {
   sta_id         Int    @id @default(autoincrement())
-  sta_name       String @unique
-  sta_team       String @unique
+  sta_image      String
   sta_lati       Float
   sta_long       Float
-
-
+  sta_name        String
+  sta_team        String
   Favorit        Favorit[]
   Recommendation Recommendation[] @relation("StadiumRecommendations")
   Cafeteria Cafeteria[]
@@ -51,7 +50,7 @@ model Recommendation {
   reco_id   Int       @id @default(autoincrement())
   reco_name String
   reco_image String
-
+  reco_player String
 
   stadiumId Int
   stadium   Stadium @relation(fields: [stadiumId], references: [sta_id], name: "StadiumRecommendations")
@@ -84,8 +83,17 @@ model StartPitcher{
   pit_home_name String // 홈 구장이름
   pit_vs_name String // 상대선수
   pit_vs_team String // 상대선수 팀이름
+  pit_game_time String // 경기 시작시간
   date String
 }
+
+model StartPitcherList{
+  id Int @id @default(autoincrement())
+  pit_player_name String
+  pit_player_iamge String
+  
+}
+
 
 model ChatRoom {
   id       Int       @id @default(autoincrement())
