@@ -9,4 +9,9 @@ export class CrawlingController {
   async getStartPitcherWithURL(): Promise<any> {
     return this.crawlingService.getStartPitcherWithURL();
   }
+
+  @Get('kbo-crawl')
+  async getStartPitcherCrawl(): Promise<any> {
+    return this.crawlingService.crawlerStartPither();
+  }
 }
