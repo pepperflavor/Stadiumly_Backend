@@ -85,14 +85,14 @@ export class CrawlingService {
 <input type="submit" name="ctl00$ctl00$ctl00$cphContents$cphContents$cphContents$btnSearch" 
 value="검색" id="cphContents_cphContents_cphContents_btnSearch" class="btn_srch02">
 */
-    for (const team of teamOptions) {
-      await page.select(
-        '#cphContents_cphContents_cphContents_ddlTeam option',
-        team.value,
-      );
-      await page.click('#cphContents_cphContents_cphContents_btnSearch');
-      await page.waitForSelector()
-    }
+    // for (const team of teamOptions) {
+    //   await page.select(
+    //     '#cphContents_cphContents_cphContents_ddlTeam option',
+    //     team.value,
+    //   );
+    //   await page.click('#cphContents_cphContents_cphContents_btnSearch');
+    //   await page.waitForSelector()
+    // }
   }
 
   // 그날그날 날짜 포메터
