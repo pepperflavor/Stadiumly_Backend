@@ -10,6 +10,7 @@ import { CrawlingModule } from './crawling/crawling.module';
 import { FileBlobModule } from './file-blob/file-blob.module';
 import { PrismaService } from './prisma.service';
 import { CrawlingService } from './crawling/crawling.service';
+import { AzureStorageModule } from './azure-storage/azure-storage.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CrawlingService } from './crawling/crawling.service';
     CafeteriaModule,
     CrawlingModule,
     FileBlobModule,
+    AzureStorageModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, CrawlingService],
