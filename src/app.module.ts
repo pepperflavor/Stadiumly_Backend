@@ -8,6 +8,8 @@ import { UserModule } from './user/user.module';
 import { CafeteriaModule } from './cafeteria/cafeteria.module';
 import { CrawlingModule } from './crawling/crawling.module';
 import { FileBlobModule } from './file-blob/file-blob.module';
+import { PrismaService } from './prisma.service';
+import { CrawlingService } from './crawling/crawling.service';
 
 @Module({
   imports: [
@@ -23,6 +25,6 @@ import { FileBlobModule } from './file-blob/file-blob.module';
     FileBlobModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PrismaService, CrawlingService],
 })
 export class AppModule {}

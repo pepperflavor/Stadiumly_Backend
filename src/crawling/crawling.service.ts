@@ -7,10 +7,14 @@ import * as puppeteer from 'puppeteer';
 import { PrismaService } from 'src/prisma.service';
 
 interface KBOGameData {
-  awayPitcher: string;
-  homePitcher: string;
-  awayPitcherImg: string | undefined;
-  homePitcherImg: string | undefined;
+  homePitcher: string; // 홈 선수이름
+  homeTeam: string; // 홈 팀이름
+  homePitcherImg: string | undefined; // 홈 구장 선수 이미지
+  homeSecondImg: string | undefined; // 홈 구장 선수 예비 이미지
+  awayPitcher: string; // 상대선수 이름
+  awayTeam: string; // 상대선수 팀
+  awayPitcherImg: string | undefined; // 상대선수 이미지
+  awaySecondImg: string | undefined; // 상대 선수 예비이미지
   broadimage: string | undefined; // 날씨 이미지
   stime: string; // 경기 시작시간
   gameID: string | undefined;
@@ -123,24 +127,61 @@ export class CrawlingService {
             const el = $(selector);
             return el.attr(attr) ?? '';
           };
+          /*
+            homePitcher: string; // 홈 선수이름
+            homeTeam: string; // 홈 팀이름
+            homePitcherImg: string | undefined; // 홈 구장 선수 이미지
+            homeSecondImg: string | undefined; // 홈 구장 선수 예비 이미지
+            awayPitcher: string; // 상대선수 이름
+            awayTeam: string; // 상대선수 팀
+            awayPitcherImg: string | undefined; // 상대선수 이미지
+            awaySecondImg: string | undefined; // 상대 선수 예비이미지
+            broadimage: string | undefined; // 날씨 이미지
+            stime: string; // 경기 시작시간
+          */
 
           return {
-            awayPitcher: getText('.team.away .today-pitcher p'),
             homePitcher: getText('.team.home .today-pitcher p'),
+            homeTeam: getImgAttr('.team.home .emb img', 'alt'),
+            homePitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.team', 'src')}`,
+            homeSecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second', 'onerror')}`,
+
+            awayPitcher: getText('.team.away .today-pitcher p'),
+            awayTeam: getImgAttr('.team.away .emb img', 'alt'),
+            awayPitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.team', 'src')}`,
+            awaySecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second', 'onerror')}`,
+
             broadimage: `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`,
             stime:
               game.querySelector('.top li:nth-child(3)')?.textContent?.trim() ??
               '',
-            homePitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.team', 'src')}`,
-            awayPitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.team', 'src')}`,
             gameID: game.getAttribute('g_id') ?? undefined,
           };
         }, gameEl);
+
         games.push(gameData);
-        console.log(games);
 
         // 대기
         await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      // prisma에 저장
+      for (let i = 0; i < games.length; i++) {
+        await this.prisma.startPitcher.create({
+          data: {
+            pit_home_name: games[i].homePitcher,
+            pit_home_team: games[i].homeTeam,
+            pit_home_image: games[i].homePitcherImg ?? '',
+            pit_home_second_image: games[i].homeSecondImg ?? '',
+            pit_away_name: games[i].awayPitcher,
+            pit_away_team: games[i].awayTeam,
+            pit_away_image: games[i].awayPitcherImg ?? '',
+            pit_away_second_image: games[i].awaySecondImg ?? '',
+            pit_broad_image: games[i].broadimage ?? '',
+            pit_game_time: games[i].stime,
+            pit_game_id: games[i].gameID ?? '',
+          },
+        });
       }
 
       return games;
