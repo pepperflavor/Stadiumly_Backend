@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { CafeteriaModule } from './cafeteria/cafeteria.module';
 import { CrawlingModule } from './crawling/crawling.module';
 import { FileBlobModule } from './file-blob/file-blob.module';
+// import { AzureModule } from './azure/azure.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { FileBlobModule } from './file-blob/file-blob.module';
     CafeteriaModule,
     CrawlingModule,
     FileBlobModule,
+    // AzureModule,
   ],
   controllers: [AppController],
   providers: [AppService],
