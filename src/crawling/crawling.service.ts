@@ -1,10 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+
 import * as puppeteer from 'puppeteer';
 import { PrismaService } from 'src/prisma.service';
 
+interface KBOGameData {
+  homePitcher: string; // 홈 선수이름
+  homeTeam: string; // 홈 팀이름
+  homePitcherImg: string | undefined; // 홈 구장 선수 이미지
+  homeSecondImg: string | undefined; // 홈 구장 선수 예비 이미지
+  awayPitcher: string; // 상대선수 이름
+  awayTeam: string; // 상대선수 팀
+  awayPitcherImg: string | undefined; // 상대선수 이미지
+  awaySecondImg: string | undefined; // 상대 선수 예비이미지
+  broadimage: string | undefined; // 날씨 이미지
+  stime: string; // 경기 시작시간
+  gameID: string | undefined;
+}
+
+// https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/person/kbo/2025/67143.png
+const cssHeader = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+};
 // 선발투수 크롤링
 @Injectable()
 export class CrawlingService {
@@ -13,9 +33,6 @@ export class CrawlingService {
   // url에서 바로 json 받아오기, param이 고정이라는 가정하에
   async getStartPitcherWithURL() {
     const paramDate = this.getParamDate();
-    console.log('크롤링 서비스 : ');
-    console.log(paramDate);
-
     const URL = `https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList?leId=1&srId=0%2C1%2C3%2C4%2C5%2C6%2C7%2C8%2C9&date=${paramDate}`;
 
     const headers = {
@@ -26,9 +43,13 @@ export class CrawlingService {
       const response = await axios.get(URL, {
         headers,
       });
-
       console.log('json 받아오기 성공? : ');
       console.log(response.data);
+
+      //@ts-ignore
+      const jdata = response.data;
+      // prisma 저장
+      const datas = jdata.map((game) => {});
       return response.data;
     } catch (error) {
       console.error('크롤링 에러남 :', error);
@@ -36,63 +57,140 @@ export class CrawlingService {
     }
   }
 
-  async crawerStartPither(data: string): Promise<any> {
+  // css 선택자로 크롤링
+  async crawlerStartPither(): Promise<any> {
+    console.log('crawlerStartPither');
+    const URL = 'https://www.koreabaseball.com/Schedule/GameCenter/Main.aspx';
+
     const browser = await puppeteer.launch({
       headless: true,
     });
 
     try {
       const page = await browser.newPage();
-
       //페이지 로드 대기
-      // await page.goto()
+      await page.goto(URL, { waitUntil: 'networkidle0' });
+
+      // 브라우저 콘솔 로그를 Node.js 콘솔로 전달
+      page.on('console', (msg) => console.log('Browser Console:', msg.text()));
+
+      await page.waitForSelector('.today-game .game-cont', { timeout: 1000 });
+
+      // html 태그로 내용 갖고오기
+      const content = await page.content();
+      const $ = cheerio.load(content);
+      const games: KBOGameData[] = [];
+
+      // 추가
+      const gameHandles = await page.$$('.today-game .game-cont');
+      for (const gameEl of gameHandles) {
+        const gameElContent = await page.evaluate((el) => el.outerHTML, gameEl);
+
+        await gameEl.click();
+
+        await page.waitForFunction(
+          () => {
+            const element = document.querySelector('#gameCenterContents');
+            const hasContent = element && element.innerHTML.trim().length > 0;
+            return hasContent;
+          },
+          {
+            timeout: 5000,
+            polling: 100, // 100ms마다 체크
+          },
+        );
+
+        // 내용이 채워진 후 DOM 가져오기
+        const newContent = await page.evaluate(() => {
+          const newElement = document.querySelector('#gameCenterContents');
+          return newElement ? newElement.innerHTML : null; // innerHTML 반환
+        });
+
+        // cheerio로 HTML 파싱
+        const $ = cheerio.load(newContent || '');
+
+        // 로딩된 다음 데이터 긁어오기
+        const gameData = await page.evaluate((el) => {
+          const game = el as HTMLElement;
+
+          const getText = (selector: string) => {
+            const el = game.querySelector(selector);
+            return el?.textContent?.trim().slice(1) ?? '';
+          };
+
+          const getImgAttr = (selector: string, attr: string) => {
+            const el = game.querySelector(selector) as HTMLImageElement;
+            return el?.getAttribute(attr) ?? '';
+          };
+
+          const getImgAttr2 = (selector: string, attr: string) => {
+            const el = $(selector);
+            return el.attr(attr) ?? '';
+          };
+          /*
+            homePitcher: string; // 홈 선수이름
+            homeTeam: string; // 홈 팀이름
+            homePitcherImg: string | undefined; // 홈 구장 선수 이미지
+            homeSecondImg: string | undefined; // 홈 구장 선수 예비 이미지
+            awayPitcher: string; // 상대선수 이름
+            awayTeam: string; // 상대선수 팀
+            awayPitcherImg: string | undefined; // 상대선수 이미지
+            awaySecondImg: string | undefined; // 상대 선수 예비이미지
+            broadimage: string | undefined; // 날씨 이미지
+            stime: string; // 경기 시작시간
+          */
+
+          return {
+            homePitcher: getText('.team.home .today-pitcher p'),
+            homeTeam: getImgAttr('.team.home .emb img', 'alt'),
+            homePitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.team', 'src')}`,
+            homeSecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second', 'onerror')}`,
+
+            awayPitcher: getText('.team.away .today-pitcher p'),
+            awayTeam: getImgAttr('.team.away .emb img', 'alt'),
+            awayPitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.team', 'src')}`,
+            awaySecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second', 'onerror')}`,
+
+            broadimage: `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`,
+            stime:
+              game.querySelector('.top li:nth-child(3)')?.textContent?.trim() ??
+              '',
+            gameID: game.getAttribute('g_id') ?? undefined,
+          };
+        }, gameEl);
+
+        games.push(gameData);
+
+        // 대기
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      // prisma에 저장
+      for (let i = 0; i < games.length; i++) {
+        await this.prisma.startPitcher.create({
+          data: {
+            pit_home_name: games[i].homePitcher,
+            pit_home_team: games[i].homeTeam,
+            pit_home_image: games[i].homePitcherImg ?? '',
+            pit_home_second_image: games[i].homeSecondImg ?? '',
+            pit_away_name: games[i].awayPitcher,
+            pit_away_team: games[i].awayTeam,
+            pit_away_image: games[i].awayPitcherImg ?? '',
+            pit_away_second_image: games[i].awaySecondImg ?? '',
+            pit_broad_image: games[i].broadimage ?? '',
+            pit_game_time: games[i].stime,
+            pit_game_id: games[i].gameID ?? '',
+          },
+        });
+      }
+
+      return games;
+      // 이제 클릭 돌면서 선수 이미지 받아와
     } catch (error) {
       console.error(error);
+    } finally {
+      await browser.close();
     }
-  }
-
-  // 모든 선수 이름, 팀, 사진 크롤링
-  // https://www.koreabaseball.com/Player/Search.aspx
-  async crawlAllPlayer(): Promise<void> {
-    const url = 'https://www.koreabaseball.com/Player/Search.aspx';
-
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    // <select name="ctl00$ctl00$ctl00$cphContents$cphContents$cphContents$ddlTeam" onchange="javascript:setTimeout('__doPostBack(\'ctl00$ctl00$ctl00$cphContents$cphContents$cphContents$ddlTeam\',\'\')', 0)" id="cphContents_cphContents_cphContents_ddlTeam" class="select02">
-    // 	<option selected="selected" value="">팀 선택</option>
-    // 	<option value="LG">LG</option>
-    // 	<option value="HH">한화</option>
-    // 	<option value="LT">롯데</option>
-    // 	<option value="KT">KT</option>
-    // 	<option value="SS">삼성</option>
-    // 	<option value="SK">SSG</option>
-    // 	<option value="NC">NC</option>
-    // 	<option value="HT">KIA</option>
-    // 	<option value="OB">두산</option>
-    // 	<option value="WO">키움</option>
-
-    // </select>
-    const teamOptions = await page.$$eval(
-      '#cphContents_cphContents_cphContents_ddlTeam option',
-      (options) =>
-        options
-          .filter((opt) => opt.value !== '' && opt.value !== '팀 선택')
-          .map((opt) => ({ name: opt.textContent?.trim(), value: opt.value })),
-    );
-    /* 검색버튼
-<input type="submit" name="ctl00$ctl00$ctl00$cphContents$cphContents$cphContents$btnSearch" 
-value="검색" id="cphContents_cphContents_cphContents_btnSearch" class="btn_srch02">
-*/
-    // for (const team of teamOptions) {
-    //   await page.select(
-    //     '#cphContents_cphContents_cphContents_ddlTeam option',
-    //     team.value,
-    //   );
-    //   await page.click('#cphContents_cphContents_cphContents_btnSearch');
-    //   await page.waitForSelector()
-    // }
   }
 
   // 그날그날 날짜 포메터
