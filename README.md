@@ -96,3 +96,10 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+# 설치 패키지 - AUTH
+npm install @nestjs/passport passport passport-local passport-jwt
+npm install --save-dev @types/passport-local @types/passport-jwt
+npm install bcrypt
+npm install --save-dev @types/bcrypt
