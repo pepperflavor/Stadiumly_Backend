@@ -8,30 +8,25 @@ import {
   Delete,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './user_dto/create-user.dto';
+import { CreateUserNomalDto } from './user_dto/create-user.dto';
 import { UpdateUserDto } from './user_dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  @Post('email-signup')
+  async create(@Body() userFormData: CreateUserNomalDto) {
+    return this.userService.userSignUpWithEmail(userFormData);
   }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+  async getUseryEmail(@Body() userEmail: string) {
+    return this.userService.userfindByEmail(userEmail);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);
   }
 
