@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
@@ -10,11 +11,9 @@ interface KBOGameData {
   homePitcher: string; // 홈 선수이름
   homeTeam: string; // 홈 팀이름
   homePitcherImg: string | undefined; // 홈 구장 선수 이미지
-  homeSecondImg: string | undefined; // 홈 구장 선수 예비 이미지
   awayPitcher: string; // 상대선수 이름
   awayTeam: string; // 상대선수 팀
   awayPitcherImg: string | undefined; // 상대선수 이미지
-  awaySecondImg: string | undefined; // 상대 선수 예비이미지
   broadimage: string | undefined; // 날씨 이미지
   stime: string; // 경기 시작시간
   gameID: string | undefined;
@@ -57,7 +56,11 @@ export class CrawlingService {
     }
   }
 
-  // css 선택자로 크롤링
+  // css 선택자로 크롤링하기
+  // @Cron(CronExpression.EVERY_DAY_AT_6AM, {
+  //   name: 'delete-old-pitcher',
+  //   timeZone: 'Asia/Seoul',
+  // })
   async crawlerStartPither(): Promise<any> {
     console.log('crawlerStartPither');
     const URL = 'https://www.koreabaseball.com/Schedule/GameCenter/Main.aspx';
@@ -127,6 +130,20 @@ export class CrawlingService {
             const el = $(selector);
             return el.attr(attr) ?? '';
           };
+
+          // const secondImg = (selector: string, attr: string) => {
+          //   const el = document.querySelector(selector);
+          //   return el?.getAttribute(attr) ?? '';
+          // };
+          const getFallbackImageFromOnError = (selector: string): string => {
+            const el = document.querySelector(selector);
+            if (!el) return '';
+
+            const html = el.outerHTML;
+            const match = html.match(/onerror="this\.src='([^']+)'"/);
+            return match ? `https:${match[1]}` : '';
+          };
+
           /*
             homePitcher: string; // 홈 선수이름
             homeTeam: string; // 홈 팀이름
@@ -140,16 +157,28 @@ export class CrawlingService {
             stime: string; // 경기 시작시간
           */
 
+          console.log(
+            `${getImgAttr2(
+              '.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second',
+              'onerror',
+            )}`,
+          );
+          // top의 <li> 태그 갯수 센 다음에 2개면 시간따오는건 2번째 엘리먼트 선택하도록 예외처리
           return {
             homePitcher: getText('.team.home .today-pitcher p'),
             homeTeam: getImgAttr('.team.home .emb img', 'alt'),
             homePitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.team', 'src')}`,
-            homeSecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second', 'onerror')}`,
-
+            // homeSecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second', 'onerror')}`,
+            homeSecondImg: getFallbackImageFromOnError(
+              '.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second',
+            ),
+            // getAttribute
             awayPitcher: getText('.team.away .today-pitcher p'),
             awayTeam: getImgAttr('.team.away .emb img', 'alt'),
             awayPitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.team', 'src')}`,
-            awaySecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second', 'onerror')}`,
+            awaySecondImg: getFallbackImageFromOnError(
+              '.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second',
+            ),
 
             broadimage: `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`,
             stime:
@@ -172,11 +201,11 @@ export class CrawlingService {
             pit_home_name: games[i].homePitcher,
             pit_home_team: games[i].homeTeam,
             pit_home_image: games[i].homePitcherImg ?? '',
-            pit_home_second_image: games[i].homeSecondImg ?? '',
+
             pit_away_name: games[i].awayPitcher,
             pit_away_team: games[i].awayTeam,
             pit_away_image: games[i].awayPitcherImg ?? '',
-            pit_away_second_image: games[i].awaySecondImg ?? '',
+
             pit_broad_image: games[i].broadimage ?? '',
             pit_game_time: games[i].stime,
             pit_game_id: games[i].gameID ?? '',
@@ -200,5 +229,19 @@ export class CrawlingService {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     return `${year}${month}${day}`;
+  }
+
+  // deleteAll records
+  // 매일 새벽 2시에 데이터 지우도록 함
+  // @Cron('02 * * *', {
+  //   name: 'delete-old-pitcher',
+  //   timeZone: 'Asia/Seoul',
+  // }) // 지금은 막아둘게영
+  async deleteAllPitcher(): Promise<any> {
+    try {
+      await this.prisma.startPitcher.deleteMany();
+    } catch (error) {
+      console.error(error);
+    }
   }
 }

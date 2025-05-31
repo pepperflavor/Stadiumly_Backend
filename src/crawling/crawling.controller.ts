@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { CrawlingService } from './crawling.service';
 
 @Controller('crawling')
@@ -7,11 +7,16 @@ export class CrawlingController {
 
   @Get('kbo-game-json')
   async getStartPitcherWithURL(): Promise<any> {
-    return this.crawlingService.getStartPitcherWithURL();
+    return await this.crawlingService.getStartPitcherWithURL();
   }
 
   @Get('kbo-crawl')
   async getStartPitcherCrawl(): Promise<any> {
-    return this.crawlingService.crawlerStartPither();
+    return await this.crawlingService.crawlerStartPither();
+  }
+
+  @Post('delete-pitcher')
+  async deleteForNextPitcher() {
+    await this.crawlingService.deleteAllPitcher();
   }
 }

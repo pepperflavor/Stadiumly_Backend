@@ -9,13 +9,15 @@ datasource db {
 
 model User {
   user_id    Int       @id @default(autoincrement())
-  user_pwd   String? @default("")
+  user_pwd   String
   user_nick  String
-  user_kakao Int  @default(0) // 카카오로 가입하면:1, 아니면 :0
-  user_grade Int       @default(1)
+  user_kakao Int      @default(0) // 카카오로 가입하면:1, 아니면 :0
+  user_grade Int      @default(0) // 0: 비회원, 1: 아이디 비번, 2:카카오, 3: 애플
+  user_stadium Int    
+
+
   favorits   Favorit[]
   messages Message[]
-
   ChatRoom ChatRoom[]
 }
 
@@ -37,8 +39,8 @@ model Stadium {
   sta_image      String
   sta_lati       Float
   sta_long       Float
-  sta_name        String
-  sta_team        String
+  sta_name        String // 구장이름
+  sta_team        String // 팀명
   Favorit        Favorit[]
   Recommendation Recommendation[] @relation("StadiumRecommendations")
   Cafeteria Cafeteria[]
@@ -51,6 +53,11 @@ model Recommendation {
   reco_name String
   reco_image String
   reco_player String
+
+  // 추가
+  reco_add String // 주소
+  reco_tp String // 전화번호s
+  reco_menu String // 대표메뉴
 
   stadiumId Int
   stadium   Stadium @relation(fields: [stadiumId], references: [sta_id], name: "StadiumRecommendations")
@@ -83,11 +90,9 @@ model StartPitcher{
   pit_home_team String // 홈 구장 팀이름
   pit_home_name String // 홈 구장 선수 이름
   pit_home_image String // 홈 구장 선수 이미지
-  pit_home_second_image String // 홈 구장 선수 예비 이미지URL
   pit_away_name String // 상대선수 이름
   pit_away_team String // 상대선수 팀이름
   pit_away_image String // 상대선수 이미지
-  pit_away_second_image String // 상대선수 예비 이미지URL
   pit_game_time String // 경기 시작시간
   pit_broad_image String
   createdAt DateTime @default(now())
@@ -97,7 +102,6 @@ model StartPitcherList{
   id Int @id @default(autoincrement())
   pit_player_name String
   pit_player_iamge String
-  
 }
 
 

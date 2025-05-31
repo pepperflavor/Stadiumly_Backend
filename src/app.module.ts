@@ -11,6 +11,7 @@ import { FileBlobModule } from './file-blob/file-blob.module';
 import { PrismaService } from './prisma.service';
 import { CrawlingService } from './crawling/crawling.service';
 import { AzureStorageModule } from './azure-storage/azure-storage.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AzureStorageModule } from './azure-storage/azure-storage.module';
       isGlobal: true,
       envFilePath: ['.env.dev'],
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     StadiumModule,
     UserModule,
