@@ -89,12 +89,20 @@ export class CrawlingService {
       for (const gameEl of gameHandles) {
         const gameElContent = await page.evaluate((el) => el.outerHTML, gameEl);
 
+        // li 갯수 체크
+        const game_cont_top_li_count = await page.evaluate((gameEl) => {
+          const topElement = gameEl.querySelector('.top');
+          const liElements = topElement?.querySelectorAll('li');
+          return liElements?.length || 0;
+        }, gameEl);
+
         await gameEl.click();
 
         await page.waitForFunction(
           () => {
             const element = document.querySelector('#gameCenterContents');
             const hasContent = element && element.innerHTML.trim().length > 0;
+
             return hasContent;
           },
           {
@@ -131,10 +139,6 @@ export class CrawlingService {
             return el.attr(attr) ?? '';
           };
 
-          // const secondImg = (selector: string, attr: string) => {
-          //   const el = document.querySelector(selector);
-          //   return el?.getAttribute(attr) ?? '';
-          // };
           const getFallbackImageFromOnError = (selector: string): string => {
             const el = document.querySelector(selector);
             if (!el) return '';
@@ -164,6 +168,7 @@ export class CrawlingService {
             )}`,
           );
           // top의 <li> 태그 갯수 센 다음에 2개면 시간따오는건 2번째 엘리먼트 선택하도록 예외처리
+
           return {
             homePitcher: getText('.team.home .today-pitcher p'),
             homeTeam: getImgAttr('.team.home .emb img', 'alt'),
@@ -180,10 +185,18 @@ export class CrawlingService {
               '.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second',
             ),
 
-            broadimage: `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`,
+            broadimage:
+              game_cont_top_li_count === 3
+                ? `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`
+                : `https:${getImgAttr('.top li:nth-child(1) img', 'src')}`,
             stime:
-              game.querySelector('.top li:nth-child(3)')?.textContent?.trim() ??
-              '',
+              game_cont_top_li_count === 3
+                ? (game
+                    .querySelector('.top li:nth-child(3)')
+                    ?.textContent?.trim() ?? '')
+                : (game
+                    .querySelector('.top li:nth-child(2)')
+                    ?.textContent?.trim() ?? ''),
             gameID: game.getAttribute('g_id') ?? undefined,
           };
         }, gameEl);
