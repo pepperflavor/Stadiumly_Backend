@@ -42,17 +42,34 @@ export class UserService {
   }
 
   // 이메일로 가입한 회원/ grade :1
-  async userfindByEmail(userEmail: string) {
+  async userfindByEmail(userEmail: string, teamID: number) {
+    const mypageLogoIMG = await this.prisma.stadium.findFirst({
+      where: {
+        sta_id: teamID,
+      },
+      select: {
+        sta_image: true,
+      },
+    });
     const data = await this.prisma.user.findFirst({
       where: {
         user_email: userEmail,
       },
       select: {
         user_like_staId: true,
+        user_email: true,
+        user_grade: true,
         user_nick: true,
       },
     });
-    return data;
+
+    // 이미지 주소 취합해서 보내기
+    const response = {
+      ...data,
+      sta_image: mypageLogoIMG?.sta_image,
+    };
+
+    return response;
   }
 
   // 이미 존재하는 회원인지 이메일로 확인
@@ -65,4 +82,6 @@ export class UserService {
 
     return exist;
   }
+
+  async deleteUserById(user_id: number) {}
 }

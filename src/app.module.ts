@@ -12,6 +12,7 @@ import { PrismaService } from './prisma.service';
 import { CrawlingService } from './crawling/crawling.service';
 import { AzureStorageModule } from './azure-storage/azure-storage.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     CrawlingModule,
     FileBlobModule,
     AzureStorageModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, CrawlingService],

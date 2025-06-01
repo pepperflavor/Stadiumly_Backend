@@ -21,17 +21,17 @@ export class UserController {
   }
 
   @Get()
-  async getUseryEmail(@Body() userEmail: string) {
-    return this.userService.userfindByEmail(userEmail);
+  async getUseryEmail(@Body() userEmail: string, @Body() teamID: string) {
+    return this.userService.userfindByEmail(userEmail, +teamID);
   }
 
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
-  }
+  // @Patch(':id')
+  // async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  //   return this.userService.update(+id, updateUserDto);
+  // }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  async leaveMembership(@Param('id') id: string) {
+    return this.userService.deleteUserById(+id);
   }
 }
