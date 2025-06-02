@@ -1,10 +1,11 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserNomalDto } from './user_dto/create-user.dto';
 import { PrismaService } from 'src/prisma.service';
 import { ConfigService } from '@nestjs/config';
 
 import * as bcrypt from 'bcrypt';
 import { randomNickMaker } from './randomNick';
+import { EmailSignInDto } from 'src/auth/dto/signIn-email.dto';
 
 @Injectable()
 export class UserService {
@@ -13,19 +14,26 @@ export class UserService {
     private readonly config: ConfigService,
   ) {}
 
-  async userSignUpWithEmail(signupform: CreateUserNomalDto) {
+  // 이메일로 회원가입
+  async signUpWithEmail(signupform: CreateUserNomalDto) {
     const userEmail = signupform.user_email;
     const isExist = await this.isExistEmail(userEmail);
 
     if (isExist) {
       // 사용 불가능 이메일
       // 409 응답 보냄
-      throw new ConflictException('이미 존재하는 이메일 입니다');
+      throw new HttpException(
+        '이미 존재하는 이메일 입니다',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    const hashedPWD = await bcrypt.hash(signupform.user_pwd, 18);
+    const salt = parseInt(
+      this.config.get<string>('BCRYPT_SALT_ROUNDS') || '18',
+    );
+    const hashedPWD = await bcrypt.hash(signupform.user_pwd, salt);
 
-    // 랜덤 형용사 + 구단 마스코트
+    // 랜덤 형용사 + 구단 마스코트 이름
     const userNick = randomNickMaker(signupform.user_like_staId);
 
     const data = await this.prisma.user.create({
@@ -33,46 +41,58 @@ export class UserService {
         user_email: signupform.user_email,
         user_like_staId: signupform.user_like_staId
           ? signupform.user_like_staId
-          : 0,
+          : 11, // 11이 응원하는 팀 없음
         user_pwd: hashedPWD,
         user_grade: 1,
-        user_nick: userNick,
+        user_nick: signupform.user_nick ? signupform.user_nick : userNick,
       },
     });
+
+    return data;
   }
 
-  // 이메일로 가입한 회원/ grade :1
-  async userfindByEmail(userEmail: string, teamID: number) {
-    const mypageLogoIMG = await this.prisma.stadium.findFirst({
+  // 이메일로 가입한 회원 로그인
+  async userFindByEmail(emailSignInDto: EmailSignInDto) {
+    const plainPWD = emailSignInDto.user_pwd;
+
+    const user = await this.prisma.user.findFirst({
       where: {
-        sta_id: teamID,
-      },
-      select: {
-        sta_image: true,
+        user_email: emailSignInDto.user_email,
       },
     });
-    const data = await this.prisma.user.findFirst({
+
+    if (!user) {
+      throw new HttpException(
+        '사용자를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // 비밀번호 일치하는지 확인
+    const isMatch = await this.comparePassword(plainPWD, user.user_pwd || '');
+
+    if (isMatch && user) {
+      return user;
+    }
+
+    // 유저 못찾음
+    return null;
+  }
+
+  async findUserById(userID: number) {
+    return await this.prisma.user.findFirst({
       where: {
-        user_email: userEmail,
+        user_id: userID,
       },
       select: {
-        user_like_staId: true,
-        user_email: true,
-        user_grade: true,
+        user_id: true,
+        user_refreshtoken: true,
         user_nick: true,
       },
     });
-
-    // 이미지 주소 취합해서 보내기
-    const response = {
-      ...data,
-      sta_image: mypageLogoIMG?.sta_image,
-    };
-
-    return response;
   }
 
-  // 이미 존재하는 회원인지 이메일로 확인
+  // 이미 존재하는 회원인지 이메일로 확인 && 같은 이메일로 회원가입한적 있는지 확인
   private async isExistEmail(user_email: string) {
     const exist = await this.prisma.user.findFirst({
       where: {
@@ -84,4 +104,26 @@ export class UserService {
   }
 
   async deleteUserById(user_id: number) {}
+
+  // 비밀번호 일치하는지 확인
+  async comparePassword(plainPWD: string, hashedPWD: string): Promise<boolean> {
+    return bcrypt.compare(plainPWD, hashedPWD);
+  }
+
+  // 리프레시 토큰 발급 및 저장
+  async updateRefreshToken(userId: number, refreshToken: string) {
+    const salt = parseInt(
+      this.config.get<string>('BCRYPT_SALT_ROUNDS') || '18',
+    );
+    const hashedToken = await bcrypt.hash(refreshToken, salt);
+
+    return this.prisma.user.update({
+      where: {
+        user_id: userId,
+      },
+      data: {
+        user_refreshtoken: hashedToken,
+      },
+    });
+  }
 }

@@ -9,23 +9,46 @@ datasource db {
 
 model User {
   user_id    Int       @id @default(autoincrement())
-  user_email String?
+  user_email String? // @unique @db.Char(20) // 이메일이 유니크여야 하는데 카카오랑 애플에서 받아올 수 잇는지 확인
   user_pwd   String?
-  user_nick  String
+  user_nick  String @db.Char(20)
   user_grade Int      @default(0) // 0: 비회원, 1: 아이디 비번, 2:카카오, 3: 애플
+  user_status Int @default(0) // 0: 정상활동 유저, 1: 탈퇴회원 -> 재가입 불가능
+  user_refreshtoken String?
   user_like_staId Int @default(0) // 유저가 팬인 팀의 홈 구장, 디폴트 id 0: 아직 팬 설정 안함
-
+  
+  stadium Stadium @relation(fields: [user_like_staId], references: [sta_id])
 
   favorits   Favorit[]
   messages Message[]
   ChatRoom ChatRoom[]
+
+  AnonyUser AnonyUser[]
+  AppleUSer AppleUSer[]
+}
+
+// 비회원이면 디바이스 정보 받아오기
+model AnonyUser{
+  ano_id Int @id @default(autoincrement())
+  ano_uuid String @unique
+  userID Int @unique
+  user User @relation(fields: [userID], references: [user_id])
+
+}
+
+
+// 애플 유저, 로그인 탈퇴에 필요한 데이터 따로 보관
+model AppleUSer{
+  app_user_id Int @id @default(autoincrement())
+  
+  userID Int @unique
+  user User @relation(fields: [userID], references: [user_id])
 }
 
 model Favorit {
   fav_id  Int     @id @default(autoincrement())
   user_id Int
   sta_id  Int
-
 
   stadium Stadium @relation(fields: [sta_id], references: [sta_id])
   user    User    @relation(fields: [user_id], references: [user_id])
@@ -41,9 +64,13 @@ model Stadium {
   sta_long       Float
   sta_name        String // 구장이름
   sta_team        String // 팀명
+
+
   Favorit        Favorit[]
   Recommendation Recommendation[] @relation("StadiumRecommendations")
   Cafeteria      Cafeteria[]
+
+  User User[]
 }
 
 

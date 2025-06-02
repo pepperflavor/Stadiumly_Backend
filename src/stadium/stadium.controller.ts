@@ -14,7 +14,7 @@ export class StadiumController {
   }
   // @Query('teamname') teamName: string
 
-  @Get()
+  @Get(':id')
   async getStadiumDetailData(@Query('teamid') teamid: string) {
     const tempID = parseInt(teamid);
     const data = await this.stadiumService.getStadiumByTeamName(tempID);
