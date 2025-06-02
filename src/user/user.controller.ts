@@ -8,35 +8,30 @@ import {
   Delete,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './user_dto/create-user.dto';
+import { CreateUserNomalDto } from './user_dto/create-user.dto';
 import { UpdateUserDto } from './user_dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  @Post('email-signup')
+  async create(@Body() userFormData: CreateUserNomalDto) {
+    return this.userService.userSignUpWithEmail(userFormData);
   }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  async getUseryEmail(@Body() userEmail: string, @Body() teamID: string) {
+    return this.userService.userfindByEmail(userEmail, +teamID);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
-  }
+  // @Patch(':id')
+  // async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  //   return this.userService.update(+id, updateUserDto);
+  // }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  async leaveMembership(@Param('id') id: string) {
+    return this.userService.deleteUserById(+id);
   }
 }

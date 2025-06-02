@@ -9,11 +9,11 @@ datasource db {
 
 model User {
   user_id    Int       @id @default(autoincrement())
-  user_pwd   String
+  user_email String?
+  user_pwd   String?
   user_nick  String
-  user_kakao Int      @default(0) // 카카오로 가입하면:1, 아니면 :0
   user_grade Int      @default(0) // 0: 비회원, 1: 아이디 비번, 2:카카오, 3: 애플
-  user_stadium Int    
+  user_like_staId Int @default(0) // 유저가 팬인 팀의 홈 구장, 디폴트 id 0: 아직 팬 설정 안함
 
 
   favorits   Favorit[]
@@ -43,9 +43,10 @@ model Stadium {
   sta_team        String // 팀명
   Favorit        Favorit[]
   Recommendation Recommendation[] @relation("StadiumRecommendations")
-  Cafeteria Cafeteria[]
-  ParkingLot ParkingLot[]
+  Cafeteria      Cafeteria[]
 }
+
+
 
 // 추천맛집
 model Recommendation {
@@ -56,11 +57,11 @@ model Recommendation {
 
   // 추가
   reco_add String // 주소
-  reco_tp String // 전화번호s
+  reco_tp String // 전화번호
   reco_menu String // 대표메뉴
 
-  stadiumId Int
-  stadium   Stadium @relation(fields: [stadiumId], references: [sta_id], name: "StadiumRecommendations")
+  reco_stadiumId Int
+  stadium   Stadium @relation(fields: [reco_stadiumId], references: [sta_id], name: "StadiumRecommendations")
 }
 
 // 구내 식당
@@ -68,20 +69,21 @@ model Cafeteria {
   cafe_id   Int       @id @default(autoincrement())
   cafe_name String
   cafe_image String
-  cafe_location String
-  stadiumId Int
-  stadium   Stadium @relation(fields: [stadiumId], references: [sta_id])
+  cafe_location String // 위치 3루2층 == 3ru_2f
+  cafe_category String // 음식 카테고리
+  cafe_stadiumId Int
+  stadium   Stadium @relation(fields: [cafe_stadiumId], references: [sta_id])
 }
 
 // 주차장 정보도 저장해서 해야함
-model ParkingLot {
-  park_id   Int       @id @default(autoincrement())
-  park_name String
-  park_lati Float
-  park_long Float
-  stadiumId Int
-  stadium   Stadium @relation(fields: [stadiumId], references: [sta_id])
-}
+// model ParkingLot {
+//   park_id   Int       @id @default(autoincrement())
+//   park_name String
+//   park_lati Float
+//   park_long Float
+//   stadiumId Int
+//   stadium   Stadium @relation(fields: [stadiumId], references: [sta_id])
+// }
 
 // 선발투수 정보
 model StartPitcher{
@@ -94,14 +96,8 @@ model StartPitcher{
   pit_away_team String // 상대선수 팀이름
   pit_away_image String // 상대선수 이미지
   pit_game_time String // 경기 시작시간
-  pit_broad_image String
+  pit_broad_image String //  날씨 이미지
   createdAt DateTime @default(now())
-}
-
-model StartPitcherList{
-  id Int @id @default(autoincrement())
-  pit_player_name String
-  pit_player_iamge String
 }
 
 
