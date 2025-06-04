@@ -15,7 +15,7 @@ export class CafeteriaService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     return (await this.prisma.cafeteria.findMany({
       where: {
-        stadiumId: staIdNum,
+        cafe_stadiumId: staIdNum,
         cafe_location: location,
       },
       select: {

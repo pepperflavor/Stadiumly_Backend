@@ -1,42 +1,44 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+
+import { CreateUserNomalDto } from 'src/user/user_dto/create-user.dto';
+import { LocalAuthGuard } from './local-auth.guard';
+import { JwtAuthGuard } from './jwt.guard';
+import { UserService } from 'src/user/user.service';
+import { AuthUser } from 'src/types/auth-user.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private userService: UserService,
+  ) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('email-signup')
+  async signUpWithEmail(@Body() userformData: CreateUserNomalDto) {
+    return this.authService.signUpWithEmail(userformData);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Post('refresh')
+  async getNewRefreshToken(@Body() body: { refresh_token: string }) {
+    return this.authService.refreshTokens(body.refresh_token);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  @UseGuards(LocalAuthGuard)
+  @Post('email-login')
+  async signInWithEmial(@Request() req: { user: AuthUser }) {
+    return this.authService.loginEmail(req.user);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Request() req: { user: AuthUser }) {
+    return this.userService.updateRefreshToken(req.user.user_id, '');
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
-  }
+  // @UseGuards(LocalAuthGuard)
+  // @Post('email-login')
+  // async signInWithEmial(@Request() req) {
+  //   return this.authService.signInWithEmail(req.user);
+  // }
 }

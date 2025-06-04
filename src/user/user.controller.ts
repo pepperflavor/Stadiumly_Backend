@@ -1,37 +1,30 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Post, Body, Param } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserNomalDto } from './user_dto/create-user.dto';
-import { UpdateUserDto } from './user_dto/update-user.dto';
+import { EmailSignInDto } from 'src/auth/dto/signIn-email.dto';
 
+// 회원가입, 탈퇴
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('email-signup')
+  @Post('email-join')
   async create(@Body() userFormData: CreateUserNomalDto) {
-    return this.userService.userSignUpWithEmail(userFormData);
+    return this.userService.signUpWithEmail(userFormData);
   }
 
-  @Get()
-  async getUseryEmail(@Body() userEmail: string, @Body() teamID: string) {
-    return this.userService.userfindByEmail(userEmail, +teamID);
+  @Post('email-enter')
+  async signInWithEmail(@Body() emailSignInDto: EmailSignInDto) {
+    return this.userService.userFindByEmail(emailSignInDto);
   }
 
-  // @Patch(':id')
-  // async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-  //   return this.userService.update(+id, updateUserDto);
+  // @Get()
+  // async getUseryEmail(@Body() userEmail: string, @Body() teamID: string) {
+  //   return this.myPage.userfindByEmail(userEmail, +teamID);
   // }
 
-  @Delete(':id')
-  async leaveMembership(@Param('id') id: string) {
-    return this.userService.deleteUserById(+id);
+  @Post('delete/:id')
+  async leaveMembership(@Param('id') user_id: string) {
+    return this.userService.deleteUserById(+user_id);
   }
 }

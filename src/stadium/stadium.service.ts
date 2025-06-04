@@ -17,6 +17,7 @@ export class StadiumService {
         sta_team: true,
         sta_lati: true,
         sta_long: true,
+        sta_image: true,
       },
     });
 
