@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as sgMail from '@sendgrid/mail';
 
+const email = 'email';
 @Injectable()
 export class MailService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
