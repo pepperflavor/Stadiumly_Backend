@@ -121,34 +121,26 @@ export class CrawlingService {
         const $ = cheerio.load(newContent || '');
 
         // 로딩된 다음 데이터 긁어오기
-        const gameData = await page.evaluate((el) => {
-          const game = el as HTMLElement;
+        const gameData = await page.evaluate(
+          (el, game_cont_top_li_count) => {
+            const game = el as HTMLElement;
 
-          const getText = (selector: string) => {
-            const el = game.querySelector(selector);
-            return el?.textContent?.trim().slice(1) ?? '';
-          };
+            const getText = (selector: string) => {
+              const el = game.querySelector(selector);
+              return el?.textContent?.trim().slice(1) ?? '';
+            };
 
-          const getImgAttr = (selector: string, attr: string) => {
-            const el = game.querySelector(selector) as HTMLImageElement;
-            return el?.getAttribute(attr) ?? '';
-          };
+            const getImgAttr = (selector: string, attr: string) => {
+              const el = game.querySelector(selector) as HTMLImageElement;
+              return el?.getAttribute(attr) ?? '';
+            };
 
-          const getImgAttr2 = (selector: string, attr: string) => {
-            const el = $(selector);
-            return el.attr(attr) ?? '';
-          };
+            const getImgAttr2 = (selector: string, attr: string) => {
+              const el = $(selector);
+              return el.attr(attr) ?? '';
+            };
 
-          const getFallbackImageFromOnError = (selector: string): string => {
-            const el = document.querySelector(selector);
-            if (!el) return '';
-
-            const html = el.outerHTML;
-            const match = html.match(/onerror="this\.src='([^']+)'"/);
-            return match ? `https:${match[1]}` : '';
-          };
-
-          /*
+            /*
             homePitcher: string; // 홈 선수이름
             homeTeam: string; // 홈 팀이름
             homePitcherImg: string | undefined; // 홈 구장 선수 이미지
@@ -161,45 +153,41 @@ export class CrawlingService {
             stime: string; // 경기 시작시간
           */
 
-          console.log(
-            `${getImgAttr2(
-              '.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second',
-              'onerror',
-            )}`,
-          );
-          // top의 <li> 태그 갯수 센 다음에 2개면 시간따오는건 2번째 엘리먼트 선택하도록 예외처리
+            console.log(
+              `${getImgAttr2(
+                '.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second',
+                'onerror',
+              )}`,
+            );
+            // top의 <li> 태그 갯수 센 다음에 2개면 시간따오는건 2번째 엘리먼트 선택하도록 예외처리
 
-          return {
-            homePitcher: getText('.team.home .today-pitcher p'),
-            homeTeam: getImgAttr('.team.home .emb img', 'alt'),
-            homePitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.team', 'src')}`,
-            // homeSecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second', 'onerror')}`,
-            homeSecondImg: getFallbackImageFromOnError(
-              '.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second',
-            ),
-            // getAttribute
-            awayPitcher: getText('.team.away .today-pitcher p'),
-            awayTeam: getImgAttr('.team.away .emb img', 'alt'),
-            awayPitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.team', 'src')}`,
-            awaySecondImg: getFallbackImageFromOnError(
-              '.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img.second',
-            ),
-
-            broadimage:
-              game_cont_top_li_count === 3
-                ? `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`
-                : `https:${getImgAttr('.top li:nth-child(1) img', 'src')}`,
-            stime:
-              game_cont_top_li_count === 3
-                ? (game
-                    .querySelector('.top li:nth-child(3)')
-                    ?.textContent?.trim() ?? '')
-                : (game
-                    .querySelector('.top li:nth-child(2)')
-                    ?.textContent?.trim() ?? ''),
-            gameID: game.getAttribute('g_id') ?? undefined,
-          };
-        }, gameEl);
+            return {
+              homePitcher: getText('.team.home .today-pitcher p'),
+              homeTeam: getImgAttr('.team.home .emb img', 'alt'),
+              homePitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img:not(.team)', 'src')}`,
+              // homeSecondImg: `${getImgAttr2('.tbl-pitcher tbody tr:first-child td.pitcher .player-img img.second', 'onerror')}`,
+              // getAttribute
+              awayPitcher: getText('.team.away .today-pitcher p'),
+              awayTeam: getImgAttr('.team.away .emb img', 'alt'),
+              awayPitcherImg: `https:${getImgAttr2('.tbl-pitcher tbody tr:nth-child(2) td.pitcher .player-img img:not(.team)', 'src')}`,
+              broadimage:
+                game_cont_top_li_count === 3
+                  ? `https:${getImgAttr('.top li:nth-child(2) img', 'src')}`
+                  : `https:${getImgAttr('.top li:nth-child(1) img', 'src')}`,
+              stime:
+                game_cont_top_li_count === 3
+                  ? (game
+                      .querySelector('.top li:nth-child(3)')
+                      ?.textContent?.trim() ?? '')
+                  : (game
+                      .querySelector('.top li:nth-child(2)')
+                      ?.textContent?.trim() ?? ''),
+              gameID: game.getAttribute('g_id') ?? undefined,
+            };
+          },
+          gameEl,
+          game_cont_top_li_count,
+        );
 
         games.push(gameData);
 
