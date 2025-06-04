@@ -39,7 +39,6 @@ export class MypageController {
   @UseGuards(JwtAuthGuard)
   @Post('pwdChange')
   async updatePWD(@Request() req: AuthRequest, @Body() body: UpdatePwdDto) {
-
     return this.myPage.changePWD(
       +req.user.user_id,
       body.new_pwd,
